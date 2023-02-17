@@ -43,7 +43,7 @@ public class WebActivity extends AppCompatActivity {
     private final static int FILE_CHOOSER_RESULT_CODE = 10000;
     private WebView webView;
     private String targetUrl;
-    int keyBroadHeight =0;
+    int keyBroadHeight = 0;
     boolean isVisiableForLast = false;
     private int currentHeight = 0;
 
@@ -90,14 +90,14 @@ public class WebActivity extends AppCompatActivity {
                 //获得屏幕整体的高度
                 int hight = decorView.getHeight();
                 //获得键盘高度
-                int keyboardHeight = hight-displayHight;
-                if (keyboardHeight<130){
+                int keyboardHeight = hight - displayHight;
+                if (keyboardHeight < 130) {
                     keyboardMinHeight = keyboardHeight;
                 }
                 boolean visible = (double) displayHight / hight < 0.8;
-                if(visible != isVisiableForLast){
+                if (visible != isVisiableForLast) {
                     // listener.onSoftKeyBoardVisible(visible,keyboardHeight );
-                    keyBroadHeight =    keyboardHeight;
+                    keyBroadHeight = keyboardHeight;
                 }
                 isVisiableForLast = visible;
                 int heightdiff = screenHeight - rectHeight;
@@ -105,9 +105,9 @@ public class WebActivity extends AppCompatActivity {
                     //键盘弹出
                     currentHeight = heightdiff;
                     // 如果是小130 都认为是没有弹出键盘
-                    if (keyboardMinHeight<=130){
-                        layoutParams.bottomMargin =0;
-                    }else {
+                    if (keyboardMinHeight <= 130) {
+                        layoutParams.bottomMargin = 0;
+                    } else {
                         layoutParams.bottomMargin = keyboardHeight;
                     }
                     webView.requestLayout();
@@ -120,7 +120,7 @@ public class WebActivity extends AppCompatActivity {
         });
     }
 
-    public float dpTopx(Float value){
+    public float dpTopx(Float value) {
         return (0.5f + value + getResources().getDisplayMetrics().density);
     }
 
@@ -222,16 +222,16 @@ public class WebActivity extends AppCompatActivity {
                 Log.e("tag", "url=" + url);
                 Log.e("tag", "userAgent=" + userAgent);
                 Log.e("tag", "contentDisposition=" + contentDisposition);
-                String  decoderString = "";
+                String decoderString = "";
                 try {
-                    decoderString  =	URLDecoder.decode(url, "UTF-8");
+                    decoderString = URLDecoder.decode(url, "UTF-8");
                     String[] split = decoderString.split("/");
-                    fileName = split[split.length-1];
+                    fileName = split[split.length - 1];
                     Log.e("tag", "mimetype=" + mimetype);
                     Log.e("tag", "contentLength=" + contentLength);
                     Toast.makeText(WebActivity.this, "正在下载", Toast.LENGTH_SHORT).show();
                     final DownloadDataUtil upDataUtil = new DownloadDataUtil(WebActivity.this);
-                    final String newFile = getFilesDir() +File.separator+fileName;
+                    final String newFile = getFilesDir() + File.separator + fileName;
                     if (Build.VERSION.SDK_INT >= 29) {
                         final String finalFileName = fileName;
                         new Thread(new Runnable() {
@@ -369,5 +369,18 @@ public class WebActivity extends AppCompatActivity {
                 }, PermissionConstants.STORE);
             }
         });
+    }
+
+
+    /**
+     * 定义js回调方法
+     * 消息列表中视频下载按钮回调,用于客户处理视频文件url自定义后续操作
+     *
+     * @param videoUrl 回调回来的视频url
+     */
+    @JavascriptInterface
+    public void onDownloadVideo(String videoUrl) {
+        Toast.makeText(this, videoUrl, Toast.LENGTH_SHORT).show();
+        Log.i("JS_onDownloadVideo", videoUrl);
     }
 }
