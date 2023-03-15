@@ -41,4 +41,11 @@ public void checkPermission(String type) {
     });
 }
 ```
+#### 3：视频文件url
+```
+@JavascriptInterface
+public void onDownloadVideo(String videoUrl) {
+    Toast.makeText(this, videoUrl, Toast.LENGTH_SHORT).show();
+    Log.i("JS_onDownloadVideo", videoUrl);
+}
 
