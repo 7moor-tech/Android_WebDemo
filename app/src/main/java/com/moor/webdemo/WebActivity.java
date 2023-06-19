@@ -3,8 +3,10 @@ package com.moor.webdemo;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,6 +17,7 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -47,13 +50,17 @@ public class WebActivity extends AppCompatActivity {
     boolean isVisiableForLast = false;
     private int currentHeight = 0;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web);
-
         webView = findViewById(R.id.webview);
+
+//        CookieManager.getInstance().setAcceptCookie(false);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
+//        }
+
         targetUrl = getIntent().getStringExtra("targetUrl");
         setWebConfig();
         if (!TextUtils.isEmpty(targetUrl)) {
@@ -165,6 +172,14 @@ public class WebActivity extends AppCompatActivity {
                 openImageChooserActivity(intent.getType());
                 return true;
             }
+
+            @Override
+            public void onPermissionRequest(PermissionRequest request) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    //直接同意即可     deny是拒绝
+                    request.grant(request.getResources());
+                }
+            }
         });
         webView.loadUrl(targetUrl);
 
@@ -182,7 +197,6 @@ public class WebActivity extends AppCompatActivity {
                 webView.loadUrl(url);
                 return true;
             }
-
         });
     }
 
@@ -190,9 +204,11 @@ public class WebActivity extends AppCompatActivity {
      * 配置WebView
      */
     private void setWebConfig() {
-        webView.setWebContentsDebuggingEnabled(true);
-        //webView.clearFocus();
+        if (BuildConfig.DEBUG) {
+            webView.setWebContentsDebuggingEnabled(true);
+        }
 
+        //webView.clearFocus();
 
         WebSettings webSettings = webView.getSettings();
         //如果访问的页面中要与Javascript交互，则webview必须设置支持Javascript
@@ -246,6 +262,9 @@ public class WebActivity extends AppCompatActivity {
                 }
             }
         });
+
+        //允许webview自动播放音频
+        webSettings.setMediaPlaybackRequiresUserGesture(false);
 
     }
 
@@ -383,4 +402,7 @@ public class WebActivity extends AppCompatActivity {
         Toast.makeText(this, videoUrl, Toast.LENGTH_SHORT).show();
         Log.i("JS_onDownloadVideo", videoUrl);
     }
+
+
 }
+

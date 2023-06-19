@@ -23,6 +23,7 @@ public class PermissionConstants {
     public static final String RECORD_AUDIO = Manifest.permission.RECORD_AUDIO;
     public static final String READ_CONTACTS = Manifest.permission.READ_CONTACTS;
     public static final String CALL_PHONE = Manifest.permission.CALL_PHONE;
+    public static final String MODIFY_AUDIO = Manifest.permission.MODIFY_AUDIO_SETTINGS;
 
     public PermissionConstants() {
         perMap.put(STORE, "存储");
