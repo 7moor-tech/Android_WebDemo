@@ -164,12 +164,10 @@ public class WebActivity extends AppCompatActivity {
             // For Android >= 5.0
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
-                Intent intent = fileChooserParams.createIntent();
-                String[] a = fileChooserParams.getAcceptTypes();
-
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                String[] types = fileChooserParams.getAcceptTypes();
                 uploadMessageAboveL = filePathCallback;
-                openImageChooserActivity(intent.getType());
+                openImageChooserActivity(types);
                 return true;
             }
 
@@ -282,13 +280,12 @@ public class WebActivity extends AppCompatActivity {
     /**
      * 打开本地
      */
-    private void openImageChooserActivity(String type) {
+    private void openImageChooserActivity(String[] types) {
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
-        if ("image/*".equals(type)) {
-            i.setType("image/*");
-        } else {
-            i.setType("*/*");
+        i.setType("*/*");
+        if(types != null && types.length > 0 && !TextUtils.isEmpty(types[0])) {
+            i.putExtra(Intent.EXTRA_MIME_TYPES, types);
         }
         startActivityForResult(Intent.createChooser(i, "Image Chooser"), FILE_CHOOSER_RESULT_CODE);
     }
