@@ -149,6 +149,7 @@ public class WebActivity extends AppCompatActivity {
                 openImageChooserActivity();
             }
 
+
             // For Android  >= 3.0
             public void openFileChooser(ValueCallback valueCallback, String acceptType) {
                 uploadMessage = valueCallback;

@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+    namespace "com.moor.webdemo"
     compileSdkVersion 29
     defaultConfig {
         applicationId "com.moor.webdemo"
@@ -8,6 +9,10 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
+    }
+    buildFeatures {
+        buildConfig = true
+        resValues = true
     }
     buildTypes {
         release {
