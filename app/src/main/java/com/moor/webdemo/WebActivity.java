@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Rect;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -15,6 +16,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -23,6 +25,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -49,6 +52,11 @@ public class WebActivity extends AppCompatActivity {
     int keyBroadHeight = 0;
     boolean isVisiableForLast = false;
     private int currentHeight = 0;
+
+    private View customView;
+    private WebChromeClient.CustomViewCallback customViewCallback;
+    private int originalOrientation;
+    private FrameLayout fullScreenContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -179,6 +187,33 @@ public class WebActivity extends AppCompatActivity {
                     request.grant(request.getResources());
                 }
             }
+
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (customView != null) {
+                    callback.onCustomViewHidden();
+                    return;
+                }
+                originalOrientation = getRequestedOrientation();
+                customView = view;
+                customViewCallback = callback;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                showFullScreenView();
+            }
+
+            @Override
+            public void onHideCustomView() {
+                if (customView == null) {
+                    return;
+                }
+                hideFullScreenView();
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                    customViewCallback = null;
+                }
+                setRequestedOrientation(originalOrientation);
+                customView = null;
+            }
         });
         webView.loadUrl(targetUrl);
 
@@ -269,6 +304,62 @@ public class WebActivity extends AppCompatActivity {
 
 
     /**
+     * 显示全屏视频视图
+     */
+    private void showFullScreenView() {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LOW_PROFILE);
+        }
+        if (fullScreenContainer == null) {
+            fullScreenContainer = new FrameLayout(this);
+            fullScreenContainer.setBackgroundColor(0xFF000000);
+            FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+            decor.addView(fullScreenContainer, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+        }
+        if (customView.getParent() != null) {
+            ((FrameLayout) customView.getParent()).removeView(customView);
+        }
+        fullScreenContainer.addView(customView, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        fullScreenContainer.setVisibility(View.VISIBLE);
+        fullScreenContainer.bringToFront();
+    }
+
+    /**
+     * 隐藏全屏视频视图
+     */
+    private void hideFullScreenView() {
+        if (fullScreenContainer != null) {
+            fullScreenContainer.setVisibility(View.GONE);
+            if (customView != null && customView.getParent() == fullScreenContainer) {
+                fullScreenContainer.removeView(customView);
+            }
+        }
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getDecorViewSystemUiVisibilityReset();
+    }
+
+    private void getDecorViewSystemUiVisibilityReset() {
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+    }
+
+
+    /**
      * 打开本地图片
      */
     private void openImageChooserActivity() {
@@ -337,11 +428,64 @@ public class WebActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack();// 返回前一个页面
-            return true;
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (customView != null) {
+                if (webView.getWebChromeClient() != null) {
+                    webView.getWebChromeClient().onHideCustomView();
+                } else {
+                    hideFullScreenView();
+                    if (customViewCallback != null) {
+                        customViewCallback.onCustomViewHidden();
+                        customViewCallback = null;
+                    }
+                    setRequestedOrientation(originalOrientation);
+                    customView = null;
+                }
+                return true;
+            }
+            if (webView.canGoBack()) {
+                webView.goBack();// 返回前一个页面
+                return true;
+            }
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (customView != null) {
+            hideFullScreenView();
+            if (customViewCallback != null) {
+                customViewCallback.onCustomViewHidden();
+                customViewCallback = null;
+            }
+            customView = null;
+        }
+        if (fullScreenContainer != null) {
+            fullScreenContainer.removeAllViews();
+            try {
+                ((FrameLayout) getWindow().getDecorView()).removeView(fullScreenContainer);
+            } catch (Exception ignored) {
+            }
+            fullScreenContainer = null;
+        }
+        if (webView != null) {
+            webView.destroy();
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (customView != null) {
+            showFullScreenView();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
 
